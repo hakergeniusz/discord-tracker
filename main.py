@@ -1,69 +1,34 @@
-import discord
-from discord.ext import commands
-from dotenv import load_dotenv
-import os
-import time
+"""Entry point for the Discord tracker bot."""
 
-# get the token
-load_dotenv()
-TOKEN = os.environ.get("TOKEN")
+from __future__ import annotations
 
+import logging
+import sys
 
-# make the bot
-bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
+from tracker.bot import TrackerBot
+from tracker.config import Config
+from tracker.logging_config import setup_logging
 
-
-@bot.event
-async def on_ready():
-    print("-" * 40)
-    print(f"Logged on as {bot.user}")
+log = logging.getLogger(__name__)
 
 
-@bot.event
-async def on_message(message: discord.Message):
-    print("-" * 40)
-    print(f"{message.author.name} sent a message.")
-    print(f"Author ID: {message.author.id}")
-    print(f"Message ID: {message.id}")
-    print(f"Timestamp: {int(time.time())}")
-    print(f"**Message**: {message.content}")
+def main() -> None:
+    try:
+        config = Config.from_env()
+        setup_logging(config)
+    except ValueError as exc:
+        print(f"Configuration error: {exc}", file=sys.stderr)
+        raise SystemExit(2) from exc
+
+    bot = TrackerBot(config)
+    try:
+        # Logging is configured above, so disable discord.py's own handler.
+        bot.run(config.token, log_handler=None)
+    except KeyboardInterrupt:
+        log.info("Interrupted by user.")
+    finally:
+        log.info("Bot stopped.")
 
 
-@bot.event
-async def on_message_delete(message: discord.Message):
-    print("-" * 40)
-    print(f"{message.author.name} deleted a message.")
-    print(f"Author ID: {message.author.id}")
-    print(f"Message ID: {message.id}")
-    print(f"Timestamp: {int(time.time())}")
-    print(f"**Message**: {message.content}")
-
-
-@bot.event
-async def on_message_edit(before: discord.Message, after: discord.Message):
-    print("-" * 40)
-    print(f"{after.author.name} edited a message.")
-    print(f"Author ID: {after.author.id}")
-    print(f"Message ID: {before.id}")
-    print(f"Timestamp: {int(time.time())}")
-    print(f"**Original message**: {before.content}")
-    print(f"**New message**: {after.content}")
-
-
-@bot.event
-async def on_raw_message_delete(payload: discord.RawMessageDeleteEvent):
-    print("-" * 40)
-    if payload.cached_message:
-        msg = payload.cached_message
-        print(f"{msg.author.name} deleted a message")
-        print(f"Author ID: {msg.author.id}")
-        print(f"Message ID: {msg.id}")
-        print(f"Timestamp: {int(time.time())}")
-        print(f"Content: {msg.content}")
-    else:
-        print("Someone unknown deleted a message.")
-        print(f"Message ID: {payload.message_id}")
-        print("Message not in cache (content unknown).")
-
-
-bot.run(TOKEN)
+if __name__ == "__main__":
+    main()

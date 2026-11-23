@@ -1,11 +1,26 @@
 [project]
 name = "discord-tracker"
-version = "0.1.0"
+version = "0.2.0"
 description = "A bot for tracking various Discord events."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "discord>=2.3.2",
+    "discord.py>=2.6.4",
     "python-dotenv>=1.2.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
     "ruff>=0.15.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
